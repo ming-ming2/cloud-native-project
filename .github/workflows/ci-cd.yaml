@@ -68,28 +68,29 @@ jobs:
           cache-from: type=registry,ref=${{ env.FRONTEND_IMAGE }}:buildcache
           cache-to: type=registry,ref=${{ env.FRONTEND_IMAGE }}:buildcache,mode=max
 
-  update-gitops-repo:
-    needs: build-and-push
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+update-gitops-repo:
+  needs: build-and-push
+  runs-on: ubuntu-latest
+  if: github.ref == 'refs/heads/main'
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+  steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
 
-      - name: Update image tags in ArgoCD manifest
-        run: |
-          # [수정 2] cd gitops 삭제 (현재 위치가 이미 루트임)
-          IMAGE_TAG="main-${{ github.sha }}"
+    - name: Update image tags in ArgoCD manifest
+      run: |
+        # [수정 포인트] 긴 SHA 코드를 7자리로 잘라서(cut) 짧게 만듭니다.
+        SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+        IMAGE_TAG="main-${SHORT_SHA}"
 
-          # Update backend image tag
-          sed -i "s|image: .*simple-board-backend:.*|image: ${{ env.BACKEND_IMAGE }}:${IMAGE_TAG}|g" k8s/backend-deployment.yaml
+        # Update backend image tag
+        sed -i "s|image: .*simple-board-backend:.*|image: ${{ env.BACKEND_IMAGE }}:${IMAGE_TAG}|g" k8s/backend-deployment.yaml
 
-          # Update frontend image tag
-          sed -i "s|image: .*simple-board-frontend:.*|image: ${{ env.FRONTEND_IMAGE }}:${IMAGE_TAG}|g" k8s/frontend-deployment.yaml
+        # Update frontend image tag
+        sed -i "s|image: .*simple-board-frontend:.*|image: ${{ env.FRONTEND_IMAGE }}:${IMAGE_TAG}|g" k8s/frontend-deployment.yaml
 
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-          git add .
-          git commit -m "Update image tags to ${IMAGE_TAG}"
-          git push
+        git config user.name "GitHub Actions"
+        git config user.email "actions@github.com"
+        git add .
+        git commit -m "Update image tags to ${IMAGE_TAG}"
+        git push
