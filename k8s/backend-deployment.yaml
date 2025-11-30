@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: mingming3/simple-board-backend:main-a5e01ecccb331efa521ae99249de655ba791f755
+          image: mingming3/simple-board-backend:main-762bf8b48671f77cae030cf32f8420563b7b6928
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5000
