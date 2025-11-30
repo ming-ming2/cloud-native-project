@@ -11,8 +11,8 @@ on:
 env:
   DOCKER_REGISTRY: docker.io
   # 비밀번호 이름 DOCKER_... 로 통일
-  BACKEND_IMAGE: ${{ secrets.DOCKER_USERNAME }}/simple-board-backend
-  FRONTEND_IMAGE: ${{ secrets.DOCKER_USERNAME }}/simple-board-frontend
+  BACKEND_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/simple-board-backend
+  FRONTEND_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/simple-board-frontend
 
 jobs:
   build-and-push:
