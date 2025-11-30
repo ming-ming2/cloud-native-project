@@ -69,39 +69,28 @@ jobs:
           cache-from: type=registry,ref=${{ env.FRONTEND_IMAGE }}:buildcache
           cache-to: type=registry,ref=${{ env.FRONTEND_IMAGE }}:buildcache,mode=max
 
-  # [중요] 여기 들여쓰기 2칸이 있어야 합니다!
-  update-gitops-repo:
-    needs: build-and-push
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+update-gitops-repo:
+  needs: build-and-push
+  runs-on: ubuntu-latest
+  if: github.ref == 'refs/heads/main'
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+  steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
 
-      - name: Update image tags in ArgoCD manifest
-        run: |
-          IMAGE_TAG="main-${{ github.sha }}"
-          # 짧은 태그를 쓰려면 아래 한 줄의 주석(#)을 풀고 쓰세요. 일단은 원래대로 둡니다.
-          # SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7); IMAGE_TAG="main-${SHORT_SHA}"
+    - name: Update image tags in ArgoCD manifest
+      run: |
+        SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+        IMAGE_TAG="main-${SHORT_SHA}"
 
-          sed -i "s|image: .*simple-board-backend:.*|image: ${{ env.BACKEND_IMAGE }}:${IMAGE_TAG}|g" k8s/backend-deployment.yaml
-          sed -i "s|image: .*simple-board-frontend:.*|image: ${{ env.FRONTEND_IMAGE }}:${IMAGE_TAG}|g" k8s/frontend-deployment.yaml
+        # Update backend image tag
+        sed -i "s|image: .*simple-board-backend:.*|image: ${{ env.BACKEND_IMAGE }}:${IMAGE_TAG}|g" k8s/backend-deployment.yaml
 
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-          git add .
-          git commit -m "Update image tags to ${IMAGE_TAG}"
-          git push
+        # Update frontend image tag
+        sed -i "s|image: .*simple-board-frontend:.*|image: ${{ env.FRONTEND_IMAGE }}:${IMAGE_TAG}|g" k8s/frontend-deployment.yaml
 
-  notify:
-    needs: [build-and-push, update-gitops-repo]
-    runs-on: ubuntu-latest
-    if: always()
-
-    steps:
-      - name: Send notification
-        run: |
-          echo "CI/CD Pipeline completed!"
-          echo "Build status: ${{ needs.build-and-push.result }}"
-          echo "GitOps update status: ${{ needs.update-gitops-repo.result }}"
+        git config user.name "GitHub Actions"
+        git config user.email "actions@github.com"
+        git add .
+        git commit -m "Update image tags to ${IMAGE_TAG}"
+        git push
