@@ -10,7 +10,7 @@ on:
 
 env:
   DOCKER_REGISTRY: docker.io
-  # 비밀번호 이름 DOCKER_... 로 통일
+  # [체크] 팀원들이랑 맞춘 이름 (DOCKERHUB_USERNAME)
   BACKEND_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/simple-board-backend
   FRONTEND_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/simple-board-frontend
 
@@ -28,6 +28,7 @@ jobs:
       - name: Login to DockerHub
         uses: docker/login-action@v2
         with:
+          # [체크] 팀원들이랑 맞춘 이름
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
@@ -69,28 +70,42 @@ jobs:
           cache-from: type=registry,ref=${{ env.FRONTEND_IMAGE }}:buildcache
           cache-to: type=registry,ref=${{ env.FRONTEND_IMAGE }}:buildcache,mode=max
 
-update-gitops-repo:
-  needs: build-and-push
-  runs-on: ubuntu-latest
-  if: github.ref == 'refs/heads/main'
+  # [수정 완료] 앞에 띄어쓰기 2칸 추가해서 jobs 안으로 넣음
+  update-gitops-repo:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
 
-  steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-    - name: Update image tags in ArgoCD manifest
-      run: |
-        SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-        IMAGE_TAG="main-${SHORT_SHA}"
+      - name: Update image tags in ArgoCD manifest
+        run: |
+          # [수정 완료] 태그 이름 짧게(7자리) 잘라서 도커랑 맞춤
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          IMAGE_TAG="main-${SHORT_SHA}"
 
-        # Update backend image tag
-        sed -i "s|image: .*simple-board-backend:.*|image: ${{ env.BACKEND_IMAGE }}:${IMAGE_TAG}|g" k8s/backend-deployment.yaml
+          # 백엔드 이미지 태그 수정
+          sed -i "s|image: .*simple-board-backend:.*|image: ${{ env.BACKEND_IMAGE }}:${IMAGE_TAG}|g" k8s/backend-deployment.yaml
 
-        # Update frontend image tag
-        sed -i "s|image: .*simple-board-frontend:.*|image: ${{ env.FRONTEND_IMAGE }}:${IMAGE_TAG}|g" k8s/frontend-deployment.yaml
+          # 프론트엔드 이미지 태그 수정
+          sed -i "s|image: .*simple-board-frontend:.*|image: ${{ env.FRONTEND_IMAGE }}:${IMAGE_TAG}|g" k8s/frontend-deployment.yaml
 
-        git config user.name "GitHub Actions"
-        git config user.email "actions@github.com"
-        git add .
-        git commit -m "Update image tags to ${IMAGE_TAG}"
-        git push
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add .
+          git commit -m "Update image tags to ${IMAGE_TAG}"
+          git push
+
+  notify:
+    needs: [build-and-push, update-gitops-repo]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Send notification
+        run: |
+          echo "CI/CD Pipeline completed!"
+          echo "Build status: ${{ needs.build-and-push.result }}"
+          echo "GitOps update status: ${{ needs.update-gitops-repo.result }}"
