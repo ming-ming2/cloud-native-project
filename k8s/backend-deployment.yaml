@@ -15,40 +15,40 @@ spec:
         app: backend
     spec:
       containers:
-      - name: backend
-        image: simple-board-backend:latest
-        imagePullPolicy: IfNotPresent
-        ports:
-        - containerPort: 5000
-        env:
-        - name: FLASK_ENV
-          value: "production"
-        volumeMounts:
-        - name: board-db-storage
-          mountPath: /app/data
-        resources:
-          requests:
-            memory: "128Mi"
-            cpu: "100m"
-          limits:
-            memory: "256Mi"
-            cpu: "200m"
-        livenessProbe:
-          httpGet:
-            path: /metrics
-            port: 5000
-          initialDelaySeconds: 10
-          periodSeconds: 10
-        readinessProbe:
-          httpGet:
-            path: /metrics
-            port: 5000
-          initialDelaySeconds: 5
-          periodSeconds: 5
+        - name: backend
+          image: mingming3/simple-board-backend:v1
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5000
+          env:
+            - name: FLASK_ENV
+              value: "production"
+          volumeMounts:
+            - name: board-db-storage
+              mountPath: /app/data
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+          livenessProbe:
+            httpGet:
+              path: /metrics
+              port: 5000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 5
       volumes:
-      - name: board-db-storage
-        persistentVolumeClaim:
-          claimName: board-db-pvc
+        - name: board-db-storage
+          persistentVolumeClaim:
+            claimName: board-db-pvc
 ---
 apiVersion: v1
 kind: Service
@@ -61,9 +61,9 @@ spec:
   selector:
     app: backend
   ports:
-  - protocol: TCP
-    port: 5000
-    targetPort: 5000
+    - protocol: TCP
+      port: 5000
+      targetPort: 5000
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -71,7 +71,7 @@ metadata:
   name: board-db-pvc
 spec:
   accessModes:
-  - ReadWriteOnce
+    - ReadWriteOnce
   resources:
     requests:
       storage: 1Gi
