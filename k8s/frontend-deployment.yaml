@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: mingming3/simple-board-frontend:main-81a753a
+          image: mingming3/simple-board-frontend:main-76f0592
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80
